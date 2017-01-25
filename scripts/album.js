@@ -65,6 +65,7 @@ var setCurrentAlbum = function(album) {
 
 var findParentByClassName = function(el, cls){
     if( el===document ){
+        console.log("No parent found");
         return null;
     }
     if( el.className===cls ){
@@ -83,8 +84,11 @@ var getSongItem = function(el){
             songItemParent = findParentByClassName(el, "album-view-song-item");
             break;
         case "album-view-song-item" : songItemParent = el;
+            console.log("No parent found with that class name");
             break;
-        default : return null;
+        default : 
+            console.log("No parent found with that class name");
+            return null;
     }
     return songItemParent.querySelector(".song-item-number");
 };
