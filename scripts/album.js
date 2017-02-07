@@ -39,9 +39,6 @@ var createSongRow = function(songNumber, songName, songLength) {
             currentSoundFile.play();
             updatePlayerBarSong();
         } else if (currentlyPlayingSongNumber === songItemNumber) {
-//            $(this).html(playButtonTemplate);
-//            $('.main-controls .play-pause').html(playerBarPlayButton);        
-//            setSong(null);
             if( currentSoundFile.isPaused() ){
                 $(this).html(pauseButtonTemplate);
                 $('.main-controls .play-pause').html(playerBarPauseButton);  
@@ -52,6 +49,7 @@ var createSongRow = function(songNumber, songName, songLength) {
                 currentSoundFile.pause();
             }
         }
+        updateSeekBarWhileSongPlays();
     };
      
     $row.find('.song-item-number').click(clickHandler);
@@ -93,9 +91,11 @@ var setSong = function(songItemNumber){
          preload: true
      });
     setVolume(currentVolume);
+    
 };
 
 var setVolume = function(volume) {
+    currentVolume = volume;
      if (currentSoundFile) {
          currentSoundFile.setVolume(volume);
      }
@@ -109,12 +109,14 @@ var nextSong = function(){
     var idx = trackIndex(currentAlbum, currentSongFromAlbum);
     if( ++idx >= currentAlbum.songs.length ) idx = 0;
     $(".song-item-number[data-song-number = '" + (idx+1) + "']").click();
+    updateSeekBarWhileSongPlays();
 };
 
 var previousSong = function(){
     var idx = trackIndex(currentAlbum, currentSongFromAlbum);
     if( --idx < 0 ) idx = currentAlbum.songs.length-1;
     $(".song-item-number[data-song-number = '" + (idx+1) + "']").click();
+    updateSeekBarWhileSongPlays();
 };
 
 var updatePlayerBarSong = function(){
@@ -126,6 +128,79 @@ var updatePlayerBarSong = function(){
     $(".currently_playing .artist-song-mobile").text(currentSongFromAlbum.title + " - " + currentAlbum.artist);
     $('.main-controls .play-pause').html(playerBarPauseButton);
 }
+
+var updateSeekBarWhileSongPlays = function() {
+    if (currentSoundFile) {
+        currentSoundFile.bind('timeupdate', function(event) {
+            var seekBarFillRatio = this.getTime() / this.getDuration();
+            var $seekBar = $('.seek-control .seek-bar');
+
+            updateSeekPercentage($seekBar, seekBarFillRatio);
+        });
+    }
+};
+
+var updateSeekPercentage = function($seekBar, seekBarFillRatio) {
+    var offsetXPercent = seekBarFillRatio * 100;
+    offsetXPercent = Math.max(0, offsetXPercent);
+    offsetXPercent = Math.min(100, offsetXPercent);
+ 
+    var percentageString = offsetXPercent + '%';
+    $seekBar.find('.fill').width(percentageString);
+    $seekBar.find('.thumb').css({left: percentageString});
+
+    
+};
+
+var setupSeekBars = function() {
+    var $seekBars = $('.player-bar .seek-bar');
+    
+    var setControlValue = function($seekBar, seekBarFillRatio){
+        if( $seekBar.parent().hasClass("volume") ){
+            setVolume(100 * seekBarFillRatio);
+        }else if( $seekBar.parent().hasClass("seek-control") && currentSongFromAlbum){
+            seek(currentSongFromAlbum.duration * seekBarFillRatio);
+        }
+        updateSeekPercentage($seekBar, seekBarFillRatio);
+    }
+    
+    $seekBars.click(function(event) {
+        var offsetX = event.pageX - $(this).offset().left;
+        var barWidth = $(this).width();
+        var seekBarFillRatio = offsetX / barWidth;
+        setControlValue($(this), seekBarFillRatio);
+    });
+    
+    $seekBars.find('.thumb').mousedown(function(event) {
+        var $seekBar = $(this).parent();
+
+        $(document).bind('mousemove.thumb', function(event){
+            var offsetX = event.pageX - $seekBar.offset().left;
+            var barWidth = $seekBar.width();
+            var seekBarFillRatio = offsetX / barWidth;
+            setControlValue($seekBar, seekBarFillRatio);
+        });
+        $(document).bind('mouseup.thumb', function() {
+            $(document).unbind('mousemove.thumb');
+            $(document).unbind('mouseup.thumb');
+        });
+     });
+    
+    $seekBars.each(function(){
+        if( $(this).parent().hasClass("volume") ){
+            setControlValue($(this), currentVolume/100);
+        }else if( $(this).parent().hasClass("seek-control") ){
+            setControlValue($(this), 0);
+        }
+    })
+};
+
+var seek = function(time) {
+    if (currentSoundFile) {
+        currentSoundFile.setTime(time);
+    }
+};
+
 
 var playButtonTemplate = '<a class="album-song-button"><span class="ion-play"></span></a>';
 var pauseButtonTemplate = '<a class="album-song-button"><span class="ion-pause"></span></a>';
@@ -140,8 +215,10 @@ var $previousButton = $('.main-controls .previous');
 var $nextButton = $('.main-controls .next');
  
 $(document).ready(function(){
-     setCurrentAlbum(albumPicasso);
-     $previousButton.click(previousSong);
-     $nextButton.click(nextSong);
+    setCurrentAlbum(albumPicasso);
+    setupSeekBars();
+    $previousButton.click(previousSong);
+    $nextButton.click(nextSong);
+    
 });
 
