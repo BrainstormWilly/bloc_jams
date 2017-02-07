@@ -248,6 +248,8 @@ var $playButton = $('.main-controls .play-pause');
 $(document).ready(function(){
     setCurrentAlbum(albumPicasso);
     setupSeekBars();
-     $playButton.click(togglePlayFromPlayerBar);
+    $playButton.click(togglePlayFromPlayerBar);
+    $nextButton.click(nextSong);
+    $previousButton.click(previousSong);
 });
 
