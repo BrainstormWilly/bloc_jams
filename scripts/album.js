@@ -5,7 +5,7 @@ var createSongRow = function(songNumber, songName, songLength) {
         '<tr class="album-view-song-item">'
         + '  <td class="song-item-number" data-song-number="' + songNumber + '">' + songNumber + '</td>'
         + '  <td class="song-item-title">' + songName + '</td>'
-        + '  <td class="song-item-duration">' + songLength + '</td>'
+        + '  <td class="song-item-duration">' + filterTimeCode(songLength) + '</td>'
         + '</tr>';
  
     var $row = $(template);
@@ -132,6 +132,7 @@ var updatePlayerBarSong = function(){
     $(".currently_playing .song-name").text(currentSongFromAlbum.title);
     $(".currently_playing .artist-song-mobile").text(currentSongFromAlbum.title + " - " + currentAlbum.artist);
     $playButton.html(playerBarPauseButton);
+    setTotalTimeInPlayerBar(currentSongFromAlbum.duration);
 }
 
 var updateSeekBarWhileSongPlays = function() {
@@ -141,7 +142,9 @@ var updateSeekBarWhileSongPlays = function() {
             var $seekBar = $('.seek-control .seek-bar');
 
             updateSeekPercentage($seekBar, seekBarFillRatio);
+            setCurrentTimeInPlayerBar(this.getTime());
         });
+        
     }
 };
 
@@ -155,6 +158,14 @@ var updateSeekPercentage = function($seekBar, seekBarFillRatio) {
     $seekBar.find('.thumb').css({left: percentageString});
 
     
+};
+
+var setCurrentTimeInPlayerBar = function(currentTime){
+    $(".currently-playing .current-time").text(filterTimeCode(currentTime));
+};
+
+var setTotalTimeInPlayerBar = function(totalTime){
+    $(".currently-playing .total-time").text(filterTimeCode(totalTime));
 };
 
 var setupSeekBars = function() {
@@ -205,6 +216,20 @@ var seek = function(time) {
         currentSoundFile.setTime(time);
     }
 };
+
+var filterTimeCode = function(seconds){
+    var secs = "00";
+    var mins = Math.floor(seconds / 60);
+    if( mins>0 ){
+        secs = Math.round(seconds % 60);
+    }else{
+        secs = Math.round(seconds);
+    }
+    if( secs<10 ){
+        secs = "0" + secs;
+    }
+    return mins + ":" + secs;
+}
 
 
 var playButtonTemplate = '<a class="album-song-button"><span class="ion-play"></span></a>';
